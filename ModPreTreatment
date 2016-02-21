@@ -1,0 +1,249 @@
+MODULE PreTreatment
+ 
+ ! Predefined user data
+ !*********************
+ ! Declaration of numeric Position
+ ! Knife Rack Define;
+PERS num  KnfRageA :=1;
+PERS num  KnfRageB :=2;
+PERS num  KnfRageC :=3;
+!...
+PERS num A_L := 1; 
+PERS num A_H := 9;
+PERS num B_L := 11;
+PERS num B_H := 19;
+PERS num C_L := 21;
+PERS num C_H := 29;
+PERS num D_L := 31;
+PERS num D_H := 39;
+!......
+ ! Rough Rack Define;
+PERS num RghRageU :=21;
+PERS num RghRageV :=22;
+PERS num RghRageW :=23;
+PERS num RghRageX :=24;
+
+PERS num U_L := 181;
+PERS num U_H := 188;
+PERS num V_L := 191;
+PERS num V_H := 198;
+PERS num W_L := 201;
+PERS num W_H := 208;
+PERS num X_L := 211;
+PERS num X_H := 218;
+!......
+
+ ! CNC Position Define;
+PERS num CNC_01 := 30;
+PERS num CNC_02 := 31;
+PERS num CNC_03 := 32;
+
+!判断 0 无夹手 1 扫描 2 取料 3 取刀
+PERS num nAddrID;  !从PLC传来的地址值;  
+PERS num nControlID; !能过PLC传来的命令及地址，整合而来;
+
+PERS num ToolStat;  !工具状态
+PERS num WorkTarget;    !即将要使用的工具;
+
+ ! 具体工具ID，供以上两个变量使用；
+PERS num nMaterial := 2;
+PERS num nKnife := 3;
+PERS num nScanner :=1;
+PERS num nFlangeEmpty:=0;  
+
+PERS num scanCount; !扫描次数计数;
+PERS num nCoordY:=0;
+PERS num nCoordX:=0;
+    
+VAR btnres PressedKey;
+
+操作点
+PERS robtarget pRghScan;  !物料扫描点;
+PERS robtarget pKnfScan;  !刀具扫描点;
+PERS robtarget pRghOprt;  !物料操作点!
+PERS robtarget pKnfOprt;  !刀具操作点!
+
+! !到位后，设置相应值，供程序判断，离开后置0;
+PERS num nRghScanPos:=0;    
+PERS num nRghOprtPos:=1; 
+PERS num nKnfScanPos:=2; 
+PERS num nKnfOprtPos:=3; 
+
+! 根据快换头所缸感应，设置相应工具状态
+PROC VerifyToolStat()
+  IF  DI_ToolScanStat THEN
+    ToolStat := nScanner; 
+  ELSEIF DI_ToolRghStat THEN
+    ToolStat := nMaterial;
+  ELSEIF DI_ToolKnifStat THEN
+    ToolStat := nKnife;
+  ELSE
+    ToolStat := nFlangeEmpty;
+  ENDIF
+ENDPROC
+
+
+!定义ROBOT方位GI_CuClock,并根据 GI_ADDRESS的值,分配给GI_FuClock,以用于取放扫时第一点的路径过渡;
+Proc MoveJClock(VAR num nClock)
+    
+	TEST nClock
+		CASE 0:
+			MoveJ pClock0,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,0;
+		CASE 1:	
+			MoveJ pClock1,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,1;
+		CASE 2:
+			MoveJ pClock2,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,2;
+		CASE 3:
+			MoveJ pClock3,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,3;
+		CASE 4:
+			MoveJ pClock4,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,4;
+		CASE 5:
+			MoveJ pClock5,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,5;
+		CASE 6:
+			MoveJ pClock6,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,6;
+		CASE 7:
+			MoveJ pClock7,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,7;
+		CASE 8:
+			MoveJ pClock8,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,8;
+		CASE 9:
+			MoveJ pClock9,vNormal,z10,tool0 ;  
+            SetGO GO_vCuClock,9;
+		CASE 10:
+			MoveJ pClock10,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,10;
+		CASE 11:
+			MoveJ pClock11,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,11;
+		CASE 12:
+			MoveJ pClock12,vNormal,z10,tool0 ;
+            SetGO GO_vCuClock,12;
+        DEFAULT:
+            Stop;
+            UiMsgBox\Header:="Unknow direction ID!","The arguments of function is wrong! "\MsgLine2:="Please check the arguments!"\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+        
+            
+    ENDTEST
+    !设置偏移点
+    IF GI_FuClock > 6 THEN  !如时钟方向大于6，那么运动在右侧
+        nCoordX := 100;  !扫描点，下一点的间距;
+        nCoordY := -100; !到扫描点的过渡点;
+    ELSEIF GI_FuClock < 6 THEN  !在左侧
+        nCoordX := -100;   
+        nCoordY := 100;
+    ENDIF
+ENDPROC
+
+!从刀位，或料位，移到HOME位
+Proc  MoveToRgvPos() 
+
+    IF KnifePosActive THEN
+      MoveL pAlignKnf,vFast,z10,tool0;    
+      MoveJClock(6);
+    ELSEIF RoughPosActive THEN
+      MoveL pAlignRgv,vFast,z10,tool0;   
+      MoveJClock(6);
+    ELSE
+      Stop;
+              UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+    ENDIF
+ENDPROC
+
+
+!  更换工具,1 先检查是否有刀料在夹具上,如有,报警,等人工取掉,再回MAIN程序,重新执行  
+    !        2 检测ROBOT位置 避免碰撞   可能位置: 1 刀扫描位 2 料架扫描位 3 RGV临时位
+
+  !交换工具函数
+PROC SwapTool(num UnloadTool,num LoadTool)
+    MoveToRgvPos;
+    IF DI_GripperStat THEN    
+     ! Warning;   !STOP
+    ENDIF
+    TEST UnloadTool
+        CASE ToolScan:
+            UnloadToolScan; 
+        CASE toolGripper:
+            UnloadtoolGripper; 
+        CASE ToolKnife:
+            UnloadToolKnife;
+    ENDTEST
+    !判断哪种工具，并调用装载程序
+    TEST LoadTool
+        CASE ToolScan:    
+            LoadToolScan;   
+        CASE toolGripper:
+            LoadtoolGripper; 
+        CASE ToolKnife:
+            LoadTooKnife; 
+    ENDTEST
+  
+ENDPROC
+ 
+ !装载工具程序，先移到HOME位
+! LoadTool(SwapTool);
+    !   IF KnifePosActive OR  RoughPosActive THEN     
+	MoveToRgvPos
+	!装载工具
+
+
+   ! ENDIF
+
+PROC TransPath()
+	IF GI_FuClock - GI_CuClock  >0 THEN
+		FOR I FROM GO_vCuClock TO GO_vFuClock DO
+				MoveJClock(I);
+				incr I;
+        ENDFOR
+    ELSEIF GI_FuClock - GI_CuClock <0 THEN
+		FOR I FROM GO_vCuClock TO GO_vFuClock DO
+				MoveJClock(I);
+				decr I;
+		ENDFOR
+    
+    ENDIF
+
+ENDPROC
+
+
+       
+PROC  ProcessStyle()          !1-返回各位置区域;   2-更换夹具;    3-控制ROBOT是否回HOME点;  4-处理ROBOT点位偏移;
+nAddrID:= GI_AdressID;
+VerifyToolStat;      !分析工具状态
+
+!1 定义位置区域  V
+  IF nAddr <= A_H AND nAddr >= A_L THEN
+     WorkPosition := RageA;                                                                         
+     WorkTarget := Knife;
+  ELSEIF nAddr <= B_H AND nAddr >= B_L THEN
+     WorkPosition := RageB;                                                                         
+!....
+  ENDIF
+  
+   
+ 2 更换所需要夹具(检测夹具上是否为空)
+  根据 0 当前夹具 1 上次位置值  2 此次位置区域 3 命令
+      1.先判断 是否为扫描 ,是 换扫描夹 否  再判断  WorkTarget是否为刀 如为刀,不管取放,都换刀夹  ,如非刀,换料夹
+  IF DI_Scan AND ToolStat <> nScanner THEN
+      SwapTool ToolStat,nScanner ;
+    ELSEIF WorkTarget = nKnife AND ToolStat <> nKnife THEN
+      SwapTool ToolStat,nKnife ;
+    ELSEIF WorkTartget= nMaterial AND ToolStat <> nMaterial THEN
+      SwapTool ToolStat,nMaterial ;
+  ENDIF
+
+   3 控制回HOME点           
+  IF DI_SafePos AND  DO_SafePos=0 THEN
+    MoveToRgvPos;
+   ENDIF
+
+ENDPROC
+
+ENDMODULE
