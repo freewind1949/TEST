@@ -1,0 +1,493 @@
+MODULE MainModule
+ 
+    
+  !Speeddata definition
+  CONST speeddata vVeryFast:=[3000,500,5000,1000];
+  CONST speeddata vFast:=[2000,500,5000,1000];
+  CONST speeddata vNormal:=[1000,500,5000,1000];
+  CONST speeddata vSlow:=[500,100,5000,1000];
+  CONST speeddata vVerySlow:=[50,50,5000,1000];  
+  
+!ClockDirection
+    CONST robtarget pClock0:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock1:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock2:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock3:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock4:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock5:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock6:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock7:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock8:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock9:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock10:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock11:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pClock12:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+ !Common use
+    CONST robtarget pAlignRgv:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    !CONST robtarget pRgv:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pAlignKnf:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget pHome:=[[942.94,1564.01,-451.03],[0.108178,-0.712849,-0.060184,0.690306],[0,0,0,1],[76.2602,9E+09,9E+09,9E+09,9E+09,9E+09]];
+
+PROC InitSystem()
+scanCount :=0;
+ENDPROC
+
+ PROC HomePos()
+    MoveJ pHome, vmax, fine, tool0;
+    RETURN;
+  ENDPROC
+
+PROC VerifyAtHome()
+    HomePos;
+    
+ENDPROC
+
+PROC GripLoad()
+
+    RESET DO_ToolRelax;
+    SET DO_ToolClamp;   
+    WaitUntil DI_GripRelaxed=0\MaxTime:=5;
+    WaitUntil DI_GripClamped=1\MaxTime:=5;
+    IF ERRNO=ERR_WAIT_MAXTIME THEN
+        ErrWrite "Gripper statment error","Please check the gripper air or sensor!";
+        !ErrWrite "Detect material overtime!","Please check the material or sensor!";
+    ENDIF
+ENDPROC
+PROC GripUnload()
+    RESET DO_ToolClamp;
+    SET DO_ToolRelax;   
+    WaitUntil DI_GripClamped=0\MaxTime:=5;
+    WaitUntil DI_GripRelaxed=1\MaxTime:=5;
+    IF ERRNO=ERR_WAIT_MAXTIME THEN
+        ErrWrite "Gripper statment error","Please check the gripper air or sensor!";
+        !ErrWrite "Detect material overtime!","Please check the material or sensor!";
+    ENDIF
+ENDPROC
+
+PROC MAIN()  
+
+  InitSystem;                              
+
+  VerifyAtHome;                           
+
+  WHILE TRUE DO                             
+
+    ProcessStyle;   !Integrate 1. Return addressZone 2.Control to change tools needed; 3 Whether back to home; 4 Process offset.
+                          
+                   
+    TEST nControlID                     
+    
+      CASE 1:  ! Scan from Rack step:    
+                ! 1 Judgment TCP position is appropriate;
+                ! 2 Moving cycle;
+                ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+         ! 1
+            IF NOT (CurrentPos(pClock6) OR  GO_vWorkingPos=nRghScanPos) THEN 
+          	    STOP;         		    
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ENDIF            
+            IF CurrentPos(pClock6) THEN      !From pClock6 move to appropriate point;
+                TransPath;
+            ENDIF
+         ! 2 
+            scanCount :=0;   ! The numbers of scan;   
+            MoveJ Offs(pRghScan,0,nCoordY,-30),vEmpLow,z1,toolScan;    !Fetch point outside of the rack (nCoordY distance);
+            nCoordXTemp:=nCoordX;        
+            WHILE DI_Scan DO  !When receiving the instruction of scan,into the circulation, 
+                                !when scan reset,then out of the loop, ROBOT moves to rack outside a little;     
+                nCoordXTemp := nCoordX_Temp*(scanCount); !Calculation X direction offset each scan, are offset a certain position in the X direction;
+                pRghScan.trans.x:=pRghScan.trans.x+nCoordXTemp; 
+                IF scanCount > 0 THEN  ! When scanCount > 0, need wait DI_ScanNext and move to the Transition point between two scanpoint;
+                    WaitUntil DI_ScanNext,1;
+                    MoveL Offs(pRghScan,nCoordX/2,0,-30),vEmpLow,z10,toolScan;  !Transition points
+                ENDIF                
+                MoveL pRghScan,vEmpLow,z1,toolScan;   !Move to the scan pos,this point must be variable;
+                SetDO DO_ScanArrived; !
+                Incr scanCount;  !Every time receive DI_ScanNext signal, then the num +1;
+            ENDWHILE 
+          ! 3
+            WaitUntil DI_Scan=0;      ! Wait over signal from plc;
+                scanCount:=0;         !Reset scan num;  
+                MoveJ Offs(pRghScan,0,nCoordY,-30),vEmpLow,z1,toolScan; !Transition postion,ready to end the scan instruction; 
+                GO_vWorkingPos := nRghScanPos;        !Save    
+                Set DO_ScanOver;        !Send over signal to plc;
+                    
+           !Other Duplicate scan can use the same program,only need to be assigned to the point.                      
+     
+                  
+      CASE 2:    !Fetch from rack; STEP:
+                    ! 1 Judgment TCP position is appropriate;
+                    ! 2 Moving;
+                    ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+        ! 1
+            IF NOT CurrentPos(pClock6)  THEN 
+         	    STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ELSE
+                  TransPath;  !From pClock6 move to appropriate oClock point;
+            ENDIF
+
+        ! 2 GripUnload; !Detecting whether the clamp is released
+            MoveJ Offs(pRghOprt,0,nCoordY,0),vEmpLow,z1,toolGripper;  
+            MoveL Offs(pRghOprt,0,0,0),vEmpLow,z1,toolGripper;   !TCP moved workpiece at yet lift;
+            MoveL Offs(pRghOprt,0,0,100),vNormal,z1,toolGripper;      !ROBOT Lift workpiece and prepare to clamp, Z-axis value is questionable;
+            GripLoad;    !Tight workpiece
+            MoveJ Offs(pRghOprt,0,nCoordY,100),vEmpLow,z1,toolGripper;   !Transition points      
+            MoveJClock GO_vFuClock;                  !Move to the original direction CLOCK
+            MoveJClock(6);   !Fetch over,next step must be go home;
+            nRghOprtPos:=TRUE;               !!Save    
+        ! 3
+            DO_FetchOver;  !Send over signal to plc;
+            WaitUntil DI_Fetch=0;   ! Wait over signal from plc;
+            
+
+        
+             !Other Duplicate can use the same program,only need to be assigned to the point.     
+ 
+
+      CASE 3: !Place the workpiece to the rack; STEP:
+                    ! 1 Judgment TCP position is appropriate;
+                    ! 2 Moving;
+                    ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+ 
+        ! 1
+              IF NOT CurrentPos(pClock6)  THEN 
+         	    STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ELSE
+                  TransPath;  !From pClock6 move to appropriate oClock point;
+            ENDIF
+        ! 2 Gripload; !Detecting whether the clamp is tight;
+            MoveJ Offs(pRghOprt,0,nCoordY,100),vNormal,z1,toolGripper;   !Over the outer point (higher);
+            MoveL Offs(pRghOprt,0,0,100),vNormal,z1,toolGripper;   !TCP move to the material holder,z-axis offset 100; 
+            GripUnload;    !Release gripper;
+            MoveL pRghOprt,vSlow,z1,toolGripper;      !TCP move to the material holder,z-axis down a little;
+            MoveJ Offs(pRghOprt,0,nCoordY,0),vNormal,z1,toolGripper;   !TCP move out;     
+            MoveJClock GI_FuClock;                  !Move to the original direction CLOCK
+            MoveJClock(6);  !Go home; 
+        ! 3
+            DO_PlaceOver;  !Send over signal to plc;
+            WaitUntil DI_Place=0;   !Wait over signal from plc;
+         !Other Duplicate can use the same program,only need to be assigned to the point.         
+
+      CASE 4:   ! Scan from knife holder,STEP:    
+                ! 1 Judgment TCP position is appropriate;
+                ! 2 Moving;
+                ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+        ! 1
+            IF NOT (CurrentPos(pClock6) OR  GO_vWorkingPos=nKnfScanPos) THEN 
+          	    STOP;         		    
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ENDIF   
+            IF CurrentPos(pClock6) THEN      !From pClock6 move to appropriate point;
+                TransPath;
+            ENDIF
+         ! 2 
+       
+            MoveJ Offs(nKnfScanPos,0,nCoordY,-30),vEmpLow,z1,toolScan;    !Fetch point outside of the rack (nCoordY distance);
+            nCoordXTemp:=nCoordX;  
+            MoveL pKnfScan,vEmpLow,fine,toolScan;   !Move to the scan pos,this point must be variable;
+           SetDO DO_ScanArrived; !
+              
+          ! 3
+            WaitUntil DI_Scan=0;      ! Wait over signal from plc;
+                MoveJ Offs(pKnfScan,0,nCoordY,-30),vEmpLow,z1,toolScan; !Transition postion,ready to end the scan instruction; 
+                GO_vWorkingPos := nKnfScanPos;        !Save 
+                Set DO_ScanOver;        !Send over signal to plc; 
+                !Other Duplicate scan can use the same program,only need to be assigned to the point.   
+                
+  CASE 5:   !Fetch from rack; STEP:
+                    ! 1 Judgment TCP position is appropriate;
+                    ! 2 Moving;
+                    ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+        ! 1
+            IF NOT CurrentPos(pClock6)  THEN 
+         	    STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ELSE
+                  TransPath;  !From pClock6 move to appropriate oClock point;
+            ENDIF
+        ! 2 GripUnload; !Detecting whether the clamp is released
+            MoveJ Offs(pKnfOprt,0,nCoordY,0),vEmpLow,z1,toolGripper;  
+            MoveL pKnfOprt,vEmpLow,z1,toolGripper;   !TCP moved workpiece at yet lift;
+            MoveL Offs(pKnfOprt,0,0,100),vNormal,z1,toolGripper;      !ROBOT Lift workpiece and prepare to clamp, Z-axis value is questionable;
+            GripLoad;    !Tight Knife
+            MoveJ Offs(pRghOprt,0,nCoordY,100),vEmpLow,z1,toolGripper;   !Transition points      
+            MoveJClock GO_vFuClock;                  !Move to the original direction CLOCK
+            MoveJClock(6);   !Fetch over,next step must be go home;
+            GO_vWorkingPos:=nRghOprtPos;               !!Save    
+        ! 3
+            DO_FetchOver;  !Send over signal to plc; 
+            WaitUntil DI_Fetch=0;   ! Wait over signal from plc;
+                  
+            !Other Duplicate can use the same program,only need to be assigned to the point.                                                                       
+                        
+                                 
+     CASE 6:      !Place the knife to the rack; STEP:
+                    ! 1 Judgment TCP position is appropriate;
+                    ! 2 Moving;
+                    ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+ 
+        ! 1
+            IF NOT CurrentPos(pClock6)  THEN 
+         	    STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ELSE
+                  TransPath;  !From pClock6 move to appropriate oClock point;
+            ENDIF
+        ! 2 Gripload; !Detecting whether the clamp is tight;
+            MoveJ Offs(pRghOprt,0,nCoordY,100),vNormal,z1,toolGripper;   !Over the outer point (higher);
+            MoveL Offs(pRghOprt,0,0,100),vNormal,z1,toolGripper;   !TCP move to the knife holder,z-axis offset +100;             
+            MoveL pRghOprt,vSlow,fine,toolGripper;      !TCP move to the material holder,z-axis down a little;
+            GripUnload;    !Release gripper;
+            MoveJ Offs(pRghOprt,0,nCoordY,0),vNormal,z1,toolGripper;   !TCP move out;     
+            MoveJClock GI_FuClock;                  !Move to the original direction CLOCK
+            MoveJClock(6);  !Go home; 
+        ! 3
+            DO_PlaceOver;  !Send over signal to plc;
+            WaitUntil DI_Place=0;   !Wait over signal from plc;
+         !Other Duplicate can use the same program,only need to be assigned to the point.      
+               
+               
+      CASE 7:        !Fetch from CNC; STEP:
+                    ! 1 Judgment TCP position is appropriate;
+                    ! 2 Moving;
+                    ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+
+        TEST WorkPosition        
+          CASE CNC_01:     !!Fetch from CNC_01 STEP:
+                            ! 1 Judgment TCP position is appropriate;
+                            ! 2 Moving;
+                            ! 3 Waiting the end cmd of PLC,then return the home postion;
+         ! 1
+            IF NOT CurrentPos(pClock6)  THEN 
+         	    STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ELSE
+                  TransPath;  !From pClock6 move to appropriate oClock point;
+            ENDIF
+         ! 2 
+            MoveJDO pCNC01_Out,DO_CncEnable,1 ;      !TCP will enter the door of cnc;  
+            !...
+            MoveJ  pCNC01_RoughPos;                  !TCP move to the position of workpiece;
+            GripLoad;                                  !Gripper clamp;
+            !...
+            MoveJDO pCNC01_Out,DO_Enable,0 ;      !TCP will exit the door of CNC;               
+            MoveJClock(GO_vFuClock);                   
+            MoveJClock(6);                        !TCP return the home position;
+         ! 3
+            DO_FetchOver;                         !Send the FetchOver signal to PLC
+            WaitUntil DI_Fetch=0;                !Wait the FetchOver signal from PLC;
+                      
+          CASE CNC_N:    !Other program have some analogy with up; 
+                            
+        ENDTEST
+
+
+      CASE 8:        !!Place workpiece to CNC_01, STEP:
+                            ! 1 Judgment TCP position is appropriate;
+                            ! 2 Moving;
+                            ! 3 Waiting the end cmd of PLC,then return the home postion;
+          !CallByVar "CNC_",CNCID;                       
+         TEST WorkPosition        
+          CASE CNC_01:           
+         ! 1
+            IF  CurrentPos(pClock6)  THEN 
+                TransPath;  !From pClock6 move to appropriate oClock point;
+         	ELSE
+                STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ENDIF
+            GripLoad;                                  !Dectect Gripper clamp;
+         ! 2 
+            MoveJDO pCNC01_Out,vNormal,z10,toolGripper,DO_CncEnable,1 ;      !TCP will enter the door of cnc;  
+            !...
+            MoveJ  pCNC01_RoughPos,vSlow,fine,toolGripper;                  !TCP move to the position of workpiece;
+            GripUnload;             
+            !...
+            MoveJDO pCNC01_Out,vNormal,z5,DO_Enable,0 ;    !TCP will exit the door of CNC;               
+            MoveJClock(GO_vFuClock);                   
+            MoveJClock(6);                       !TCP return the home position;
+         ! 3
+            DO_PlaceOver;                        !Send the PlaceOver signal to PLC
+            WaitUntil DI_Fetch=0;                !Wait the PlaceOver signal from PLC;
+
+             CASE CNC_N:    !Other program have some analogy with up; 
+       ENDTEST
+
+
+      CASE 9:         !Fetch knife from CNC
+         !CallByVar "CNC_",CNCID;
+         
+          !Fetch from CNC; STEP:
+                    ! 1 Judgment TCP position is appropriate;
+                    ! 2 Moving;
+                    ! 3 Waiting the end cmd of PLC,then continue the last ending work;
+
+        TEST WorkPosition        
+          CASE CNC_01:     !!Fetch from CNC_01 STEP:
+                            ! 1 Judgment TCP position is appropriate;
+                            ! 2 Moving;
+                            ! 3 Waiting the end cmd of PLC,then return the home postion;
+         ! 1
+            IF NOT CurrentPos(pClock6)  THEN 
+         	    STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ELSE
+                  TransPath;  !From pClock6 move to appropriate oClock point;
+            ENDIF
+         ! 2 
+            MoveJDO pCNC01_Out,DO_CncEnable,1 ;      !TCP will enter the door of cnc;  
+            !...
+            MoveJ CallByVar(pCNC_RoughPos,CNCID) ,vmax,z10,toolGripper; !TEST LOL !TCP move to the position of Knife;             
+            DO_CncKnfRidAsk;                           !Send require of cnc rid knife to plc 
+            WaitUntil DI_CncKnfRided;                  !CNC already rid knife from plc
+            Gripload;                                  !Clamp
+           MoveJDO pCNC01_Out,DO_Enable,0 ;      !TCP will exit the door of CNC;               
+            MoveJClock(GO_vFuClock);                   
+            MoveJClock(6);                        !TCP return the home position;
+         ! 3
+            DO_FetchOver;                         !Send the FetchOver signal to PLC
+            WaitUntil DI_Fetch=0;                !Wait the FetchOver signal from PLC;
+                      
+          CASE CNC_N:    !Other program have some analogy with up;                   
+       ENDTEST
+
+            CASE 10:  !cnc放刀
+      CASE 10:        !!Place knife to CNC, STEP:
+      
+                            ! 1 Judgment TCP position is appropriate;
+                            ! 2 Moving;
+                            ! 3 Waiting the end cmd of PLC,then return the home postion;
+          !CallByVar "CNC_",CNCID;                       
+         TEST WorkPosition        
+          CASE CNC_01:           
+         ! 1
+            IF  CurrentPos(pClock6)  THEN 
+                TransPath;  !From pClock6 move to appropriate oClock point;
+         	ELSE
+                STOP;     		
+                UiMsgBox\Header:="Unknow Position!","Robot Not in a predetermined position"\MsgLine2:="Do you want to move to home position  "\Buttons:=BtnYesNo\Icon:= iconInfo\result:=PressedKey;
+            ENDIF
+            GripLoad;                                  !Dectect Gripper clamp;
+         ! 2 
+            MoveJDO pCNC01_Out,vNormal,z10,toolGripper,DO_CncEnable,1 ;      !TCP will enter the door of cnc;  
+            !...
+            MoveJ  pCNC01_KnfPos,vSlow,fine,toolGripper;                  !TCP move to the position of knife;
+            DO_CncKnfFitAsk;                           !Send request to plc that  fit knife in cnc 
+            WaitUntil DI_CncKnfFited;                  !Wait cnc fited the knife
+            GripUnload;                                !Open the clamp   
+            !...
+            MoveJDO pCNC01_Out,vNormal,z5,DO_Enable,0 ;    !TCP will exit the door of CNC;               
+            MoveJClock(GO_vFuClock);                   
+            MoveJClock(6);                       !TCP return the home position;
+         ! 3
+            DO_PlaceOver;                        !Send the PlaceOver signal to PLC
+            WaitUntil DI_Fetch=0;                !Wait the PlaceOver signal from PLC;
+
+             CASE CNC_N:    !Other program have some analogy with up; 
+       ENDTEST
+      
+
+      CASE 11:                                       !RGV暂存台取料   (以下程序将放到子程序中执行)
+
+        TEST WorkPosition      !此为数组变量名  包含经 ProcessStyle 处理后返回的位置区域值
+
+          CASE RgvRough_1:     !从RGV暂存台1处取料
+                           IF CurrentPos(pHome0) OR CurrentPos(RgvPos)    !判断ROBOT是否在HOME点或RGV点,如是,向下执行
+                                                                           
+                                MoveJ pOffset;      !ROBOT移动到指定位置 (以RGV暂存台右前方第一个工件位置做偏移处理)    
+                                  GripLoad;         !抓手夹紧工件并检测是否有料 有料ROBOT则继续执行 无料 会报警 并程序停止,等待人工处理
+                                MoveJ pRgvPos;                             !ROBOT则回到RGV位置
+                                 GO_ControlID = 2;  !向PLC发送任务完成信号;
+                                  WaitUntil GI_ControlID =0  !等待PLC完成;
+                                GO_ControlID = 0             !信号复位;
+                                WaitUntil DI_ControlFinish   !等待PLC发送任务完成信号
+                                RgvPosActive=1               !供下次运行ProcessStyle处理，以判断ROBOT是否需要回Home点，或是继续其它动作
+                                 EXIT;                       !退出TEST;
+                          ELSE IF                                          !否报警,程序停止,并提供操作员选择界面 是否直接回HOME点
+                                 ErrorWrite "Please check robot position!";
+                               　······
+          CASE RageN:    !其它料架
+                              !以下结构同上!
+       ENDTEST
+     EXIT;
+
+      CASE 12:                                       !暂存台放料   (以下程序将放到子程序中执行)
+
+        TEST WorkPosition      !此为数组变量名  包含经 ProcessStyle 处理后返回的位置区域值
+
+          CASE RgvRough_1:      !向RGV暂存台1处放料
+                           IF CurrentPos(RgvPos)    !判断ROBOT是否在RGV点,如是,向下执行
+                                                                           
+                                MoveJ pOffset;      !ROBOT移动到暂存台指定位置处(以RGV暂存台右前方第一个工件位置做偏移处理)  
+                                  GripUnload;       !抓手松开工件,向下移动一定距离,并检测抓手是否已空 如未空 报警等待处理
+                                MoveJ pRgvPos;      !ROBOT回到RGV位置
+                                 GO_ControlID = 12; !向PLC发送任务完成信号;
+                                  WaitUntil GI_ControlID =0  !等待PLC完成;
+                                GO_ControlID = 0             !信号复位;
+                                WaitUntil DI_ControlFinish   !等待PLC发送任务完成信号
+                                RgvPosActive=1               !供下次运行ProcessStyle处理，以判断ROBOT是否需要回Home点，或是继续其它动作
+                                 EXIT;                       !退出TEST;
+                          ELSE IF                                          !否报警,程序停止,并提供操作员选择界面 是否直接回HOME点
+                                 ErrorWrite "Please check robot position!";
+                               　······
+          CASE RageN:    !其它料架
+                              !以下结构同上!
+       ENDTEST
+     EXIT;
+
+      CASE 13:                                       !RGV暂存台取刀   (以下程序将放到子程序中执行)
+
+        TEST WorkPosition      !此为数组变量名  包含经 ProcessStyle 处理后返回的位置区域值
+
+          CASE RgvKnife_1:     !从RGV暂存台1处取刀
+ 
+                                                                           
+                                MoveJ pOffset;      !ROBOT移动到指定位置 (以RGV暂存台右前方第一个刀架位置做偏移处理)    
+                                  GripLoad;         !抓手夹紧刀具并检测抓手状态 有 ROBOT则继续执行 无 会报警 并程序停止,等待人工处理
+                                MoveJ pRgvPos;      !ROBOT则回到RGV位置
+                                 GO_ControlID = 13;  !向PLC发送任务完成信号;
+                                  WaitUntil GI_ControlID =0  !等待PLC完成;
+                                GO_ControlID = 0             !信号复位;
+                                WaitUntil DI_ControlFinish   !等待PLC发送任务完成信号
+                                RgvPosActive=1               !供下次运行ProcessStyle处理，以判断ROBOT是否需要回Home点，或是继续其它动作
+                                 EXIT;                       !退出TEST;
+                          ELSE IF                                          !否报警,程序停止,并提供操作员选择界面 是否直接回HOME点
+                                 ErrorWrite "Please check robot position!";
+                               　······
+          CASE RageN:    !其它料架
+                              !以下结构同上!
+       ENDTEST
+     EXIT;
+
+      CASE 14:                                       !暂存台放刀   (以下程序将放到子程序中执行)
+
+        TEST WorkPosition      !此为数组变量名  包含经 ProcessStyle 处理后返回的位置区域值
+
+          CASE RgvKnife_1:      !向RGV暂存台1处放刀
+                           IF CurrentPos(RgvPos)    !判断ROBOT是否在RGV点,如是,向下执行
+                                                                           
+                                MoveJ pOffset;      !ROBOT移动到暂存台指定位置处(以RGV暂存台右前方第一个工件位置做偏移处理)  
+                                  GripUnload;       !抓手松开工件,向下移动一定距离,并检测抓手是否已空 如未空 报警等待处理
+                                MoveJ pRgvPos;      !ROBOT回到RGV位置
+                                 GO_ControlID = 14; !向PLC发送任务完成信号;
+                                  WaitUntil GI_ControlID =0  !等待PLC完成;
+                                GO_ControlID = 0             !信号复位;
+                                WaitUntil DI_ControlFinish   !等待PLC发送任务完成信号
+                                RgvPosActive=1               !供下次运行ProcessStyle处理，以判断ROBOT是否需要回Home点，或是继续其它动作
+                                 EXIT;                       !退出TEST;
+                          ELSE IF                                          !否报警,程序停止,并提供操作员选择界面 是否直接回HOME点
+                                 ErrorWrite "Please check robot position!";
+                               　······
+          CASE RageN:    !其它料架
+                              !以下结构同上!
+       ENDTEST
+     EXIT;
+  ENDTEST
+ENDWHILE
+WaitTime 0.2s
+ENDPROC
+
+
